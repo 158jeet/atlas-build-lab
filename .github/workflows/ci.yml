@@ -1,0 +1,110 @@
+name: Website CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: website-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tps-quality:
+    name: TPS website quality
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:security
+      - run: npm run test:forms
+      - run: npm run test:config
+      - run: npm run lint
+      - run: npm run build
+      - name: Install pinned browser QA tools
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1 axe-core@4.10.3
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run browser journeys and accessibility checks
+        run: npm run test:browser
+        env:
+          SMOKE_APP: tps
+      - name: Smoke-test production server
+        run: npm run test:smoke
+        env:
+          SMOKE_APP: tps
+      - name: Measure production-build performance (lab)
+        run: npm run test:performance
+        env:
+          SMOKE_APP: tps
+      - name: Upload TPS performance report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tps-performance-lab
+          path: artifacts/performance/tps-lab.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload visual review screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ github.job }}-visual-review
+          path: artifacts/visual-qa/
+          if-no-files-found: warn
+          retention-days: 14
+  tier-quality:
+    name: TIER website quality
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/tier
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - name: Install pinned browser QA tools
+        working-directory: ${{ github.workspace }}
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1 axe-core@4.10.3
+      - name: Install Chromium
+        working-directory: ${{ github.workspace }}
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run browser journeys and accessibility checks
+        working-directory: ${{ github.workspace }}
+        run: npm run test:browser
+        env:
+          SMOKE_APP: tier
+      - name: Smoke-test production server
+        run: npm run test:smoke
+        env:
+          SMOKE_APP: tier
+      - name: Measure production-build performance (lab)
+        working-directory: ${{ github.workspace }}
+        run: node tests/performance-audit.mjs
+        env:
+          SMOKE_APP: tier
+      - name: Upload TIER performance report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tier-performance-lab
+          path: artifacts/performance/tier-lab.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload visual review screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ github.job }}-visual-review
+          path: artifacts/visual-qa/
+          if-no-files-found: warn
+          retention-days: 14
