@@ -4,7 +4,7 @@ const ALLOWED_STATUSES = new Set(["draft", "evidence-needed", "review-pending", 
 const APPROVAL_FIELDS = ["sourceTitle", "sourceRef", "sourceAuthority", "evidenceExcerpt", "owner", "approver", "lastVerified", "nextReviewDue"];
 
 function isDate(value) {
-  return typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 }
 
 export function validateRegister(document, today = new Date().toISOString().slice(0, 10)) {
@@ -53,9 +53,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const document = JSON.parse(await readFile(path, "utf8"));
   const errors = validateRegister(document);
   if (errors.length) {
-    for (const error of errors) process.stderr.write(`ERROR: ${error}\\n`);
+    for (const error of errors) process.stderr.write(`ERROR: ${error}\n`);
     process.exitCode = 1;
   } else {
-    process.stdout.write(`Content evidence register valid: ${document.records.length} record(s); approval gate enforced.\\n`);
+    process.stdout.write(`Content evidence register valid: ${document.records.length} record(s); approval gate enforced.\n`);
   }
 }
