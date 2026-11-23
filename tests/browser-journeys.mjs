@@ -77,7 +77,7 @@ try {
         const imageAlt = Array.from(element.querySelectorAll("img[alt]")).map(image => image.getAttribute("alt") || "").join("").trim();
         return !label && !text && !imageAlt;
       })
-      .map(element => ({ tag: element.tagName, href: element.getAttribute("href"), className: typeof element.className === "string" ? element.className.slice(0, 80) : "" }));
+      .map(element => ({ tag: element.tagName, href: element.getAttribute("href"), className: typeof element.className === "string" ? element.className.slice(0, 80) : "" })));
     assert.deepEqual(unnamedControls, [], `${route} contains controls without an accessible text or label`);
 
     if (route === "/start") {
